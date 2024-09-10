@@ -332,7 +332,9 @@ export default function Home() {
         <div className="flex justify-between items-center w-9/10 sm:w-9/10 md:w-9/10 lg:w-9/10 xl:w-3/5 2xl:w-2/3">
           <nav className="flex flex-row space-x-4 justify-left items-center w-full">
             <Link href="/">Pic.Pub</Link>
-            <Link href="https://xiaoa.me/">Blog</Link>
+            <Link href="https://xiaoa.me/" target="_blank" rel="noopener noreferrer">
+              Blog
+            </Link>
           </nav>
           <Link href="/admin"><button className="bg-orange-500 text-white rounded px-2 py-1">
             <FontAwesomeIcon icon={faUserCircle} />
