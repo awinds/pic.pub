@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
-import { faImages, faTrashAlt, faUpload, faSearchPlus } from '@fortawesome/free-solid-svg-icons';
+import { faImages, faTrashAlt, faUpload, faSearchPlus, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { ToastContainer } from "react-toastify";
 import { toast } from "react-toastify";
@@ -329,19 +329,25 @@ export default function Home() {
   return (
     <main className=" overflow-auto h-full flex w-full min-h-screen flex-col items-center justify-between">
       <header className="fixed top-0 h-[50px] left-0 w-full border-b bg-white flex z-50 justify-center items-center">
-        <nav className="flex justify-between items-center w-full max-w-4xl px-4">Pic.Pub</nav>
-
-        <Link href="/admin"><button className="px-2 py-2 mx-2 sm:w-28 md:w-20 lg:w-16 xl:w-16  2xl:w-20 bg-blue-500 text-white rounded ">管理</button></Link>
+        <div className="flex justify-between items-center w-9/10 sm:w-9/10 md:w-9/10 lg:w-9/10 xl:w-3/5 2xl:w-2/3">
+          <nav className="flex flex-row space-x-4 justify-left items-center w-full">
+            <Link href="/">Pic.Pub</Link>
+            <Link href="https://xiaoa.me/">Blog</Link>
+          </nav>
+          <Link href="/admin"><button className="bg-orange-500 text-white rounded px-2 py-1">
+            <FontAwesomeIcon icon={faUserCircle} />
+          </button></Link>
+        </div>
       </header>
       <div className="mt-[60px] w-9/10 sm:w-9/10 md:w-9/10 lg:w-9/10 xl:w-3/5 2xl:w-2/3">
         <div className="flex flex-row">
           <div className="flex flex-col">
-            <div className="text-gray-800 text-lg">图片或视频上传</div>
+            <div className="text-gray-800 text-2xl">图片或视频上传</div>
             <div className="mb-4 text-sm text-gray-500">
               上传文件最大 5 MB;本站已托管 <span className="text-cyan-600">{Total}</span> 张图片; 你访问本站的IP是：<span className="text-cyan-600">{IP}</span>
             </div>
           </div>
-          <div className="flex  flex-col sm:flex-col   md:w-auto lg:flex-row xl:flex-row  2xl:flex-row  mx-auto items-center  ">
+          <div className="flex  flex-col sm:flex-col   md:w-auto lg:flex-row xl:flex-row  2xl:flex-row  mx-auto items-center  hidden">
             <span className=" text-lg sm:text-sm   md:text-sm lg:text-xl xl:text-xl  2xl:text-xl">上传接口：</span>
             <select
               value={selectedOption} // 将选择框的值绑定到状态中的 selectedOption
@@ -349,7 +355,6 @@ export default function Home() {
               className="text-lg p-2 border  rounded text-center w-auto sm:w-auto md:w-auto lg:w-auto xl:w-auto  2xl:w-36">
               {/* <option value="tg">TG</option> */}
               <option value="tgchannel">TG_Channel</option>
-
               <option value="tencent">tencent</option>
             </select>
           </div>
@@ -363,8 +368,7 @@ export default function Home() {
           onPaste={handlePaste}
           style={{ minHeight: calculateMinHeight() }} // 动态设置最小高度
         >
-          <div className="flex flex-wrap gap-3 min-h-[240px]">
-
+          <div className="flex flex-wrap gap-3 min-h-[350px]">
             {selectedFiles.map((file, index) => (
               <div key={index} className="relative rounded-2xl w-44 h-48 ring-offset-2 ring-2  mx-3 my-3 flex flex-col items-center">
                 <div className="relative w-36 h-36 " onClick={() => handleImageClick(index)}>
