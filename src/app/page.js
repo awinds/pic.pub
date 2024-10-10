@@ -481,7 +481,7 @@ export default function Home() {
           onPaste={handlePaste}
           style={{ minHeight: calculateMinHeight() }} // 动态设置最小高度
         >
-          <div className="flex flex-wrap gap-3 min-h-[280px]">
+          <div className="flex flex-wrap gap-3 min-h-[250px]">
             <LoadingOverlay loading={uploading} />
             {selectedFiles.map((file, index) => (
               <div key={index} className="relative rounded-2xl w-44 h-48 ring-offset-2 ring-2  mx-3 my-3 flex flex-col items-center">
@@ -586,7 +586,7 @@ export default function Home() {
 
 
         <ToastContainer />
-        <div className="w-full mt-4 min-h-[200px] mb-[40px] ">
+        <div className="w-full mt-4 min-h-[200px] mb-[20px]">
 
           {
             uploadedImages.length > 0 && (<>
@@ -663,7 +663,7 @@ export default function Home() {
         </div>
       )}
 
-      <div className="fixed inset-x-0 bottom-0 h-[50px] bg-slate-200  w-full  flex  z-50 justify-center items-center ">
+      <div className="fixed inset-x-0 bottom-0 h-[40px] bg-slate-200  w-full  flex  z-50 justify-center items-center ">
         <Footer />
       </div>
     </main>
