@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useCallback } from "react";
+import { signOut } from "next-auth/react"
 import Image from "next/image";
 import { faImages, faTrashAlt, faUpload, faSearchPlus, faUserCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -8,6 +9,7 @@ import { toast } from "react-toastify";
 import { useEffect } from 'react';
 import Footer from '@/components/Footer'
 import Link from "next/link";
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function Home() {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -16,10 +18,12 @@ export default function Home() {
   const [selectedImage, setSelectedImage] = useState(null); // 添加状态用于跟踪选中的放大图片
   const [activeTab, setActiveTab] = useState('preview');
   const [uploading, setUploading] = useState(false);
-  const [uploadStatusNum, setUploadStatusNum] = useState(0);
   const [IP, setIP] = useState('');
   const [Total, setTotal] = useState('?');
-  const [selectedOption, setSelectedOption] = useState('tg'); // 初始选择第一个选项
+  const [selectedOption, setSelectedOption] = useState('tgchannel'); // 初始选择第一个选项
+  const [isAuthapi, setisAuthapi] = useState(false); // 初始选择第一个选项
+  const [Loginuser, setLoginuser] = useState(''); // 初始选择第一个选项
+  const [boxType, setBoxtype] = useState("img");
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
 
@@ -39,6 +43,7 @@ export default function Home() {
   useEffect(() => {
     ip();
     getTotal();
+    isAuth();
 
 
   }, []);
@@ -54,6 +59,33 @@ export default function Home() {
       });
       const data = await res.json();
       setIP(data.ip);
+
+
+
+    } catch (error) {
+      console.error('请求出错:', error);
+    }
+  };
+  const isAuth = async () => {
+    try {
+
+      const res = await fetch(`/api/enableauthapi/isauth`, {
+        method: "GET",
+        headers: {
+          'Content-Type': 'application/json'
+        }
+
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setisAuthapi(true)
+        setLoginuser(data.role)
+
+      } else {
+        setisAuthapi(false)
+        setSelectedOption("58img")
+      }
 
 
 
@@ -96,7 +128,7 @@ export default function Home() {
 
   const handleClear = () => {
     setSelectedFiles([]);
-    // setUploadStatus('');
+    setUploadStatus('');
     // setUploadedImages([]);
   };
 
@@ -125,7 +157,10 @@ export default function Home() {
         formData.append(formFieldName, file);
   
         try {
-          const response = await fetch(`/api/${selectedOption}`, {
+	  const targetUrl = selectedOption === "tgchannel" || selectedOption === "r2"
+            ? `/api/enableauthapi/${selectedOption}`
+            : `/api/${selectedOption}`;
+          const response = await fetch(targetUrl, {
             method: 'POST',
             body: formData,
             headers: headers
@@ -140,7 +175,36 @@ export default function Home() {
             setSelectedFiles((prevFiles) => prevFiles.filter(f => f !== file));
             successCount++;
           } else {
-            toast.error(`上传 ${file.name} 图片时出错`);
+            // 尝试从响应中提取错误信息
+            let errorMsg;
+            try {
+              const errorData = await response.json();
+              errorMsg = errorData.message || `上传 ${file.name} 图片时出错`;
+            } catch (jsonError) {
+              // 如果解析 JSON 失败，使用默认错误信息
+              errorMsg = `上传 ${file.name} 图片时发生未知错误`;
+            }
+
+            // 细化状态码处理
+            switch (response.status) {
+              case 400:
+                toast.error(`请求无效: ${errorMsg}`);
+                break;
+              case 403:
+                toast.error(`无权限访问资源: ${errorMsg}`);
+                break;
+              case 404:
+                toast.error(`资源未找到: ${errorMsg}`);
+                break;
+              case 500:
+                toast.error(`服务器错误: ${errorMsg}`);
+                break;
+              case 401:
+                toast.error(`未授权: ${errorMsg}`);
+                break;
+              default:
+                toast.error(`上传 ${file.name} 图片时出错: ${errorMsg}`);
+            }
           }
         } catch (error) {
           toast.error(`上传 ${file.name} 图片时出错`);
@@ -198,7 +262,15 @@ export default function Home() {
 
   // 处理点击图片放大
   const handleImageClick = (index) => {
-    // URL.createObjectURL(selectedFiles[index])
+
+    if (selectedFiles[index].type.startsWith('image/')) {
+      setBoxtype("img");
+    } else if (selectedFiles[index].type.startsWith('video/')) {
+      setBoxtype("video");
+    } else {
+      setBoxtype("other");
+    }
+
     setSelectedImage(URL.createObjectURL(selectedFiles[index]));
   };
 
@@ -235,12 +307,53 @@ export default function Home() {
     }
   }
 
-  const handlerenderImageClick = (imageUrl) => {
-    // console.log(imageUrl);
+  const handlerenderImageClick = (imageUrl, type) => {
+    setBoxtype(type);
     setSelectedImage(imageUrl);
   };
 
+   const renderFile = (data, index) => {
+    const fileUrl = data.url;
+    if (data.type.startsWith('image/')) {
+      return (
+        <img
+          key={`image-${index}`}
+          src={data.url}
+          alt={`Uploaded ${index}`}
+          className="object-cover w-36 h-40 m-2"
+          onClick={() => handlerenderImageClick(fileUrl, "img")}
+        />
+      );
 
+    } else if (data.type.startsWith('video/')) {
+      return (
+        <video
+          key={`video-${index}`}
+          src={data.url}
+          className="object-cover w-36 h-40 m-2"
+          controls
+          onClick={() => handlerenderImageClick(fileUrl, "video")}
+        >
+          Your browser does not support the video tag.
+        </video>
+      );
+
+    } else {
+      // 其他文件类型
+      return (
+        <img
+          key={`image-${index}`}
+          src={data.url}
+          alt={`Uploaded ${index}`}
+          className="object-cover w-36 h-40 m-2"
+          onClick={() => handlerenderImageClick(fileUrl, "other")}
+        />
+      );
+    }
+
+
+
+  };
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -249,13 +362,7 @@ export default function Home() {
           <div className=" flex flex-col ">
             {uploadedImages.map((data, index) => (
               <div key={index} className="m-2 rounded-2xl ring-offset-2 ring-2  ring-slate-100 flex flex-row ">
-                <img
-                  key={`image-${index}`}
-                  src={data.url}
-                  alt={`Uploaded ${index}`}
-                  className="object-cover w-36 h-40 m-2"
-                  onClick={() => handlerenderImageClick(data.url)}
-                />
+                {renderFile(data, index)}
                 <div className="flex flex-col justify-center w-4/5">
                   {[
                     { text: data.url, onClick: () => handleCopy(data.url) },
@@ -355,8 +462,10 @@ export default function Home() {
               value={selectedOption} // 将选择框的值绑定到状态中的 selectedOption
               onChange={handleSelectChange} // 当选择框的值发生变化时触发 handleSelectChange 函数
               className="text-lg p-2 border  rounded text-center w-auto sm:w-auto md:w-auto lg:w-auto xl:w-auto  2xl:w-36">
-              <option value="tg">TG</option>
+              
               <option value="tgchannel">TG_Channel</option>
+	          <option value="r2">R2</option>
+              <option value="tg">TG(Not)</option>
               <option value="vviptuangou">vviptuangou</option>
               <option value="58img">58img</option>
               <option value="tencent">tencent</option>
@@ -372,16 +481,30 @@ export default function Home() {
           onPaste={handlePaste}
           style={{ minHeight: calculateMinHeight() }} // 动态设置最小高度
         >
-          <div className="flex flex-wrap gap-3 min-h-[350px]">
+          <div className="flex flex-wrap gap-3 min-h-[280px]">
+            <LoadingOverlay loading={uploading} />
             {selectedFiles.map((file, index) => (
               <div key={index} className="relative rounded-2xl w-44 h-48 ring-offset-2 ring-2  mx-3 my-3 flex flex-col items-center">
                 <div className="relative w-36 h-36 " onClick={() => handleImageClick(index)}>
+                  {file.type.startsWith('image/') && (
                   <Image
                     src={URL.createObjectURL(file)}
                     alt={`Preview ${file.name}`}
                     fill={true}
-
-                  />
+                    />
+                  )}
+                  {file.type.startsWith('video/') && (
+                    <video
+                      src={URL.createObjectURL(file)}
+                      controls
+                      className="w-full h-full"
+                    />
+                  )}
+                  {!file.type.startsWith('image/') && !file.type.startsWith('video/') && (
+                    <div className="flex items-center justify-center w-full h-full bg-gray-200 text-gray-700">
+                      <p>{file.name}</p>
+                    </div>
+                  )}
                 </div>
                 <div className="flex flex-row items-center  justify-center w-full mt-3">
                   <button
@@ -436,7 +559,7 @@ export default function Home() {
           </div>
           <div className="md:col-span-5 col-span-8">
             <div className="w-full h-10 bg-slate-200 leading-10 px-4 text-center md:text-left">
-              已选择 {selectedFiles.length} 张，共 {getTotalSizeInMB(selectedFiles)} M;
+              已选择 {selectedFiles.length} 张，共 {getTotalSizeInMB(selectedFiles)} M
             </div>
           </div>
           <div className="md:col-span-1 col-span-3">
@@ -463,7 +586,7 @@ export default function Home() {
 
 
         <ToastContainer />
-        <div className="w-full mt-4 min-h-[200px] mb-[60px] ">
+        <div className="w-full mt-4 min-h-[200px] mb-[40px] ">
 
           {
             uploadedImages.length > 0 && (<>
@@ -503,20 +626,39 @@ export default function Home() {
       </div>
       {selectedImage && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseImage}>
-          <div className="relative">
+          <div className="relative flex flex-col items-center justify-between">
             <button
               className="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center"
               onClick={handleCloseImage}
             >
               &times;
             </button>
-            <img
-              src={selectedImage}
-              alt="Selected"
-              width={500}
-              height={500}
-            // objectFit="contain"
-            />
+
+            {boxType === "img" ? (
+              <img
+                src={selectedImage}
+                alt="Selected"
+                width={500}
+                height={500}
+                className="object-cover w-9/10  h-auto rounded-lg"
+              />
+            ) : boxType === "video" ? (
+              <video
+                src={selectedImage}
+                width={500}
+                height={500}
+                className="object-cover w-9/10  h-auto rounded-lg"
+                controls
+              />
+            ) : boxType === "other" ? (
+              // 这里可以渲染你想要的其他内容或组件
+              <div className="p-4 bg-white text-black rounded">
+                <p>Unsupported file type</p>
+              </div>
+            ) : (
+              // 你可以选择一个默认的内容或者返回 null
+              <div>未知类型</div>
+            )}
           </div>
         </div>
       )}
