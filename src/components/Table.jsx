@@ -219,10 +219,6 @@ export default function Table({ data: initialData = [] }) {
                         {data.map((item, index) => (
 
                             <tr key={index}>
-
-                                <td onClick={() => handleNameClick(item)} className="text-center py-2 px-4 border-b border-gray-200 text-sm text-gray-700 truncate max-w-48">
-                                    {item.url}
-                                </td>
                                 <td
                                     className="w-20 h-20 sticky left-0 z-10   py-2 px-4 border-b border-gray-500 bg-white text-sm text-gray-700"
                                 >
@@ -257,6 +253,10 @@ export default function Table({ data: initialData = [] }) {
                                         )
                                     }
 
+                                </td>
+
+                                <td onClick={() => handleNameClick(item)} className="text-center py-2 px-4 border-b border-gray-200 text-sm text-gray-700 truncate max-w-48">
+                                    {item.url}
                                 </td>
                                 <td className="text-center py-2 px-4 border-b border-gray-200 text-sm text-gray-700 max-w-48">
                                     {item.time}
